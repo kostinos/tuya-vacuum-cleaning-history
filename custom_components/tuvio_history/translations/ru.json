@@ -1,0 +1,34 @@
+{
+  "title": "История уборок робота Tuya",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Подключение истории уборок робота Tuya",
+        "description": "Выберите существующие облачную учётную запись, пылесос и необязательные сущности настроек для восстановления параметров каждой архивной уборки.",
+        "data": {
+          "cloud_entry_id": "Облачная учётная запись LocalTuya",
+          "vacuum_entry_id": "Пылесос Tuya Local",
+          "clean_mode_entity_id": "Режим уборки",
+          "suction_entity_id": "Мощность всасывания",
+          "water_entity_id": "Подача воды"
+        },
+        "data_description": {
+          "cloud_entry_id": "Запись LocalTuya с Tuya Cloud client ID и secret.",
+          "vacuum_entry_id": "Запись Tuya Local с device ID робота.",
+          "clean_mode_entity_id": "Необязательный источник Recorder для сухого, влажного или комбинированного режима.",
+          "suction_entity_id": "Необязательный источник Recorder для мощности всасывания.",
+          "water_entity_id": "Необязательный источник Recorder для уровня подачи воды."
+        }
+      }
+    },
+    "error": {
+      "invalid_cloud_entry": "Выбранная запись не содержит реквизиты Tuya Cloud.",
+      "invalid_vacuum_entry": "Выбранная запись не содержит Tuya device ID."
+    },
+    "abort": {
+      "already_configured": "История этого пылесоса уже настроена.",
+      "invalid_cloud_entry": "Импортируемая облачная запись отсутствует или некорректна.",
+      "invalid_vacuum_entry": "Импортируемая запись пылесоса отсутствует или некорректна."
+    }
+  }
+}

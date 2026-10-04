@@ -1,0 +1,44 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  validate-hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate source files
+        run: |
+          python -m compileall -q custom_components
+          python -m json.tool custom_components/tuvio_history/manifest.json >/dev/null
+          python -m json.tool custom_components/tuvio_history/translations/en.json >/dev/null
+          python -m json.tool custom_components/tuvio_history/translations/ru.json >/dev/null
+          python -m json.tool hacs.json >/dev/null
+          node --check custom_components/tuvio_history/frontend/tuvio-history-card.js

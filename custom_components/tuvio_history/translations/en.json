@@ -1,0 +1,34 @@
+{
+  "title": "Tuya Vacuum Cleaning History",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect a Tuya robot vacuum history",
+        "description": "Select the existing cloud account, vacuum, and optional setting entities used to reconstruct each archived cleaning.",
+        "data": {
+          "cloud_entry_id": "LocalTuya cloud account",
+          "vacuum_entry_id": "Tuya Local vacuum",
+          "clean_mode_entity_id": "Cleaning mode entity",
+          "suction_entity_id": "Suction power entity",
+          "water_entity_id": "Water level entity"
+        },
+        "data_description": {
+          "cloud_entry_id": "The LocalTuya entry containing the Tuya Cloud client ID and secret.",
+          "vacuum_entry_id": "The Tuya Local entry containing the robot device ID.",
+          "clean_mode_entity_id": "Optional Recorder source for dry, wet, or combined mode.",
+          "suction_entity_id": "Optional Recorder source for the suction setting.",
+          "water_entity_id": "Optional Recorder source for the water-flow setting."
+        }
+      }
+    },
+    "error": {
+      "invalid_cloud_entry": "The selected entry does not contain Tuya Cloud credentials.",
+      "invalid_vacuum_entry": "The selected entry does not contain a Tuya device ID."
+    },
+    "abort": {
+      "already_configured": "This vacuum history is already configured.",
+      "invalid_cloud_entry": "The imported cloud entry is missing or invalid.",
+      "invalid_vacuum_entry": "The imported vacuum entry is missing or invalid."
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "domain": "tuvio_history",
+  "name": "Tuya Vacuum Cleaning History",
+  "codeowners": ["@kostinos"],
+  "config_flow": true,
+  "dependencies": ["frontend", "history", "http", "websocket_api"],
+  "documentation": "https://github.com/kostinos/tuya-vacuum-cleaning-history",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/kostinos/tuya-vacuum-cleaning-history/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.1.0"
+}
