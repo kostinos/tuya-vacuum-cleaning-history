@@ -26,52 +26,55 @@ specific cleaning. Current settings are never substituted for missing history.
 ## Requirements
 
 - Home Assistant 2026.9 or newer;
-- HACS;
-- an existing **LocalTuya** config entry containing Tuya Cloud `client_id` and
-  `client_secret`;
-- an existing **Tuya Local** vacuum entry containing the robot `device_id`;
-- Recorder history for the optional mode, suction, and water entities.
+- your own Tuya Cloud project Access ID and Access Secret;
+- the project's data center and the vacuum's Tuya device ID;
+- project access to the vacuum cleaning archive APIs;
+- Recorder history for optional mode, suction, and water entities.
 
-The cloud entry may remain disabled in Home Assistant, but it must not be
-deleted because this integration reads its stored credentials. No credentials
-or signed Tuya URLs are exposed to the browser.
+No LocalTuya or Tuya Local authorization is required. Credentials are stored in
+this integration's Home Assistant config entry. They are never sent to the
+browser, included in map URLs exposed to the browser, or stored in this repository.
 
 ## Installation with HACS
 
-1. Open HACS → Integrations → Custom repositories.
-2. Add `https://github.com/kostinos/tuya-vacuum-cleaning-history` as an
-   **Integration** repository.
-3. Install **Tuya Vacuum Cleaning History** and restart Home Assistant.
-4. Open Settings → Devices & services → Add integration.
-5. Search for **Tuya Vacuum Cleaning History** and select the existing cloud
-   entry, vacuum entry, and optional setting entities.
-6. Add a Manual card to a dashboard:
+1. Add `https://github.com/kostinos/tuya-vacuum-cleaning-history` as an Integration
+   custom repository in HACS, install it, and restart Home Assistant.
+2. In Settings → Devices & services → Add integration, select
+   **Tuya Vacuum Cleaning History**.
+3. Enter your Tuya project's Access ID, Access Secret, data center, and vacuum
+   device ID. Setup checks access to the cleaning archive before saving.
+4. Optionally select Recorder sources for cleaning mode, suction, and water.
+5. Add a Manual dashboard card:
 
    ```yaml
    type: custom:tuvio-history-card
    ```
 
-The card JavaScript is bundled inside the integration and registered
-automatically; no separate Lovelace resource is needed.
+Data center codes: `eu` (Central Europe), `we` (Western Europe), `us` (Western
+America), `ue` (Eastern America), `cn` (China), `in` (India), `sg` (Singapore).
+Choose the data center of the Tuya project, not your current location.
 
-## Legacy YAML import
+Use the integration's **Reconfigure** menu to change its credentials or device.
 
-Existing installations can keep this block for one restart. It is imported
-into a UI config entry without copying secrets:
+## Upgrading from v1.1.0 / legacy YAML
 
-```yaml
-tuvio_history:
-  cloud_entry_id: YOUR_LOCALTUYA_CONFIG_ENTRY_ID
-  vacuum_entry_id: YOUR_TUYA_LOCAL_CONFIG_ENTRY_ID
-  clean_mode_entity_id: select.robot_cleaning_mode
-  suction_entity_id: select.robot_suction
-  water_entity_id: select.robot_water_level
-```
+Existing UI entries migrate automatically: the previous cloud keys and vacuum ID
+are copied into this integration once, and the external entry references are
+removed. Deleting those other integrations afterwards does not affect history.
+If an old cloud entry has already been deleted, Home Assistant prompts for new
+credentials instead of silently failing setup.
 
-After the entry appears under Devices & services, remove the YAML block and
-restart Home Assistant again. If the card was installed manually before v1.1.0,
-also remove the old `/local/tuvio-history-card.js` dashboard resource; the
-integration now loads its bundled copy automatically.
+Legacy `cloud_entry_id` / `vacuum_entry_id` YAML is supported for a one-time
+import. After the history entry appears under Devices & services, remove the
+`tuvio_history` YAML block and restart again. Missing old cloud credentials can
+be entered through the resulting reauthentication notification.
+
+For a new YAML import you can also provide `client_id`, `client_secret`,
+`device_id`, and `region` directly (use `!secret` for credentials). YAML is a
+one-time import; subsequent changes should use Reconfigure.
+
+If the card was installed manually before v1.1.0, remove the old
+`/local/tuvio-history-card.js` dashboard resource. Its bundled copy loads automatically.
 
 ## Data retention
 
