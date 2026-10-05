@@ -36,6 +36,7 @@ jobs:
           node-version: "22"
       - name: Validate source files
         run: |
+          python -m unittest discover -s tests -v
           python -m compileall -q custom_components
           python -m json.tool custom_components/tuvio_history/manifest.json >/dev/null
           python -m json.tool custom_components/tuvio_history/translations/en.json >/dev/null

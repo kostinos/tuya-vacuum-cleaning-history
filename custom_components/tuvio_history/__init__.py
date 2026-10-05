@@ -18,6 +18,8 @@ from homeassistant.components import frontend, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.recorder import get_instance, history as recorder_history
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import ConfigEntryAuthFailed
+from .credentials import independent_settings
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -27,18 +29,23 @@ from .const import (
     CONF_VACUUM_ENTRY_ID,
     CONF_WATER_ENTITY_ID,
     DOMAIN,
+    CONF_CLIENT_ID, CONF_CLIENT_SECRET, CONF_REGION, CONF_DEVICE_ID, REGIONS,
 )
 
 CONFIG_SCHEMA = vol.Schema({vol.Optional(DOMAIN): vol.Schema({
-    vol.Required(CONF_CLOUD_ENTRY_ID): str,
-    vol.Required(CONF_VACUUM_ENTRY_ID): str,
+    vol.Optional(CONF_CLOUD_ENTRY_ID): str,
+    vol.Optional(CONF_VACUUM_ENTRY_ID): str,
+    vol.Optional(CONF_CLIENT_ID): str,
+    vol.Optional(CONF_CLIENT_SECRET): str,
+    vol.Optional(CONF_DEVICE_ID): str,
+    vol.Optional(CONF_REGION, default="eu"): vol.In(REGIONS),
     vol.Optional(CONF_CLEAN_MODE_ENTITY_ID): str,
     vol.Optional(CONF_SUCTION_ENTITY_ID): str,
     vol.Optional(CONF_WATER_ENTITY_ID): str,
 })}, extra=vol.ALLOW_EXTRA)
 
 CARD_PATH = "/tuvio_history/tuvio-history-card.js"
-CARD_URL = f"{CARD_PATH}?v=1.1.0"
+CARD_URL = f"{CARD_PATH}?v=1.2.0"
 
 
 def get_setting_history(hass, start, end, entity_ids):
@@ -270,15 +277,24 @@ async def async_setup(hass, config):
     return True
 
 
-async def async_setup_entry(hass, entry: ConfigEntry) -> bool:
-    """Set up one vacuum history source from a config entry."""
-    settings = dict(entry.data)
-    cloud = hass.config_entries.async_get_entry(settings[CONF_CLOUD_ENTRY_ID])
-    vacuum = hass.config_entries.async_get_entry(settings[CONF_VACUUM_ENTRY_ID])
-    if not cloud or not vacuum:
+async def async_migrate_entry(hass, entry: ConfigEntry) -> bool:
+    """Detach existing configurations from LocalTuya and Tuya Local."""
+    if entry.version > 2:
         return False
+    if entry.version == 1:
+        data = independent_settings(entry.data, hass.config_entries.async_get_entry)
+        hass.config_entries.async_update_entry(entry, data=data, version=2)
+    return True
+
+
+async def async_setup_entry(hass, entry: ConfigEntry) -> bool:
+    """Set up history using this integration's own credentials and device ID."""
+    settings = dict(entry.data)
+    if not all(settings.get(key) for key in
+               (CONF_CLIENT_ID, CONF_CLIENT_SECRET, CONF_DEVICE_ID)):
+        raise ConfigEntryAuthFailed("Enter Tuya project credentials and device ID")
     hass.data[DOMAIN]["history"] = History(
-        hass, dict(cloud.data), dict(vacuum.data), settings
+        hass, settings, {"device_id": settings[CONF_DEVICE_ID]}, settings
     )
     return True
 

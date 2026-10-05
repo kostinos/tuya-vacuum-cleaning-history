@@ -3,32 +3,55 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect a Tuya robot vacuum history",
-        "description": "Select the existing cloud account, vacuum, and optional setting entities used to reconstruct each archived cleaning.",
+        "title": "Tuya history access",
+        "description": "Enter your own Tuya Cloud project credentials and vacuum device ID. Other integrations are not used.",
         "data": {
-          "cloud_entry_id": "LocalTuya cloud account",
-          "vacuum_entry_id": "Tuya Local vacuum",
+          "client_id": "Access ID / Client ID",
+          "client_secret": "Access Secret / Client Secret",
+          "device_id": "Vacuum device ID",
+          "region": "Tuya data center",
           "clean_mode_entity_id": "Cleaning mode entity",
-          "suction_entity_id": "Suction power entity",
-          "water_entity_id": "Water level entity"
-        },
-        "data_description": {
-          "cloud_entry_id": "The LocalTuya entry containing the Tuya Cloud client ID and secret.",
-          "vacuum_entry_id": "The Tuya Local entry containing the robot device ID.",
-          "clean_mode_entity_id": "Optional Recorder source for dry, wet, or combined mode.",
-          "suction_entity_id": "Optional Recorder source for the suction setting.",
-          "water_entity_id": "Optional Recorder source for the water-flow setting."
+          "suction_entity_id": "Suction entity",
+          "water_entity_id": "Water entity"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Tuya history access",
+        "description": "Enter your own Tuya Cloud project credentials and vacuum device ID. Other integrations are not used.",
+        "data": {
+          "client_id": "Access ID / Client ID",
+          "client_secret": "Access Secret / Client Secret",
+          "device_id": "Vacuum device ID",
+          "region": "Tuya data center",
+          "clean_mode_entity_id": "Cleaning mode entity",
+          "suction_entity_id": "Suction entity",
+          "water_entity_id": "Water entity"
+        }
+      },
+      "reconfigure": {
+        "title": "Tuya history access",
+        "description": "Enter your own Tuya Cloud project credentials and vacuum device ID. Other integrations are not used.",
+        "data": {
+          "client_id": "Access ID / Client ID",
+          "client_secret": "Access Secret / Client Secret",
+          "device_id": "Vacuum device ID",
+          "region": "Tuya data center",
+          "clean_mode_entity_id": "Cleaning mode entity",
+          "suction_entity_id": "Suction entity",
+          "water_entity_id": "Water entity"
         }
       }
     },
     "error": {
-      "invalid_cloud_entry": "The selected entry does not contain Tuya Cloud credentials.",
-      "invalid_vacuum_entry": "The selected entry does not contain a Tuya device ID."
+      "cannot_connect": "Cannot connect to Tuya.",
+      "invalid_auth": "Check credentials, data center, device ID, and project access to cleaning archives."
     },
     "abort": {
       "already_configured": "This vacuum history is already configured.",
       "invalid_cloud_entry": "The imported cloud entry is missing or invalid.",
-      "invalid_vacuum_entry": "The imported vacuum entry is missing or invalid."
+      "invalid_vacuum_entry": "The imported vacuum entry is missing or invalid.",
+      "reauth_successful": "Access updated.",
+      "reconfigure_successful": "Settings updated."
     }
   }
 }

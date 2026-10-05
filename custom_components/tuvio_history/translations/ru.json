@@ -3,32 +3,55 @@
   "config": {
     "step": {
       "user": {
-        "title": "Подключение истории уборок робота Tuya",
-        "description": "Выберите существующие облачную учётную запись, пылесос и необязательные сущности настроек для восстановления параметров каждой архивной уборки.",
+        "title": "Доступ к истории Tuya",
+        "description": "Введите ключи своего проекта Tuya Cloud и ID пылесоса. Авторизация других интеграций не используется.",
         "data": {
-          "cloud_entry_id": "Облачная учётная запись LocalTuya",
-          "vacuum_entry_id": "Пылесос Tuya Local",
+          "client_id": "Access ID / Client ID",
+          "client_secret": "Access Secret / Client Secret",
+          "device_id": "ID пылесоса",
+          "region": "Дата-центр Tuya",
           "clean_mode_entity_id": "Режим уборки",
-          "suction_entity_id": "Мощность всасывания",
+          "suction_entity_id": "Мощность",
           "water_entity_id": "Подача воды"
-        },
-        "data_description": {
-          "cloud_entry_id": "Запись LocalTuya с Tuya Cloud client ID и secret.",
-          "vacuum_entry_id": "Запись Tuya Local с device ID робота.",
-          "clean_mode_entity_id": "Необязательный источник Recorder для сухого, влажного или комбинированного режима.",
-          "suction_entity_id": "Необязательный источник Recorder для мощности всасывания.",
-          "water_entity_id": "Необязательный источник Recorder для уровня подачи воды."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Доступ к истории Tuya",
+        "description": "Введите ключи своего проекта Tuya Cloud и ID пылесоса. Авторизация других интеграций не используется.",
+        "data": {
+          "client_id": "Access ID / Client ID",
+          "client_secret": "Access Secret / Client Secret",
+          "device_id": "ID пылесоса",
+          "region": "Дата-центр Tuya",
+          "clean_mode_entity_id": "Режим уборки",
+          "suction_entity_id": "Мощность",
+          "water_entity_id": "Подача воды"
+        }
+      },
+      "reconfigure": {
+        "title": "Доступ к истории Tuya",
+        "description": "Введите ключи своего проекта Tuya Cloud и ID пылесоса. Авторизация других интеграций не используется.",
+        "data": {
+          "client_id": "Access ID / Client ID",
+          "client_secret": "Access Secret / Client Secret",
+          "device_id": "ID пылесоса",
+          "region": "Дата-центр Tuya",
+          "clean_mode_entity_id": "Режим уборки",
+          "suction_entity_id": "Мощность",
+          "water_entity_id": "Подача воды"
         }
       }
     },
     "error": {
-      "invalid_cloud_entry": "Выбранная запись не содержит реквизиты Tuya Cloud.",
-      "invalid_vacuum_entry": "Выбранная запись не содержит Tuya device ID."
+      "cannot_connect": "Не удалось подключиться к Tuya.",
+      "invalid_auth": "Проверьте ключи, дата-центр, ID устройства и доступ проекта к истории уборок."
     },
     "abort": {
       "already_configured": "История этого пылесоса уже настроена.",
       "invalid_cloud_entry": "Импортируемая облачная запись отсутствует или некорректна.",
-      "invalid_vacuum_entry": "Импортируемая запись пылесоса отсутствует или некорректна."
+      "invalid_vacuum_entry": "Импортируемая запись пылесоса отсутствует или некорректна.",
+      "reauth_successful": "Доступ обновлён.",
+      "reconfigure_successful": "Настройки обновлены."
     }
   }
 }
