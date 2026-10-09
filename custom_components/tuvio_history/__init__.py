@@ -189,8 +189,10 @@ class History:
         self.pages[page] = (time.monotonic(),value)
         while len(self.pages) > 32:
             self.pages.pop(next(iter(self.pages)))
-        while len(self.records) > 640:
-            self.records.pop(next(iter(self.records)))
+        retained_ids = {record["id"] for _, cached_page in self.pages.values()
+                        for record in cached_page["records"]}
+        self.records = {record_id: record for record_id, record in self.records.items()
+                        if record_id in retained_ids}
         return value
 
     async def cleaning_type(self, record):
