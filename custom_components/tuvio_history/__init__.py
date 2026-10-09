@@ -180,12 +180,12 @@ class History:
                 record['minutes'] = int(match[1]); record['area'] = int(match[2])
                 record['section_sizes'] = [int(value) for value in match.groups()[2:]]
         records.sort(key=lambda r:r['time'],reverse=True)
-        self.records.update((r['id'], r) for r in records)
         types = await asyncio.gather(*(self.cleaning_type(record) for record in records))
         for record, cleaning_type in zip(records, types):
             if cleaning_type: record['cleaning_type'] = cleaning_type
         await self.add_recorded_settings(records)
         value = {'records':records,'total':result.get('total_count',len(records)), 'has_more':bool(result.get('has_more')), 'page':page, 'updated':int(time.time())}
+        self.records.update((r["id"], r) for r in records)
         self.pages[page] = (time.monotonic(),value)
         while len(self.pages) > 32:
             self.pages.pop(next(iter(self.pages)))
