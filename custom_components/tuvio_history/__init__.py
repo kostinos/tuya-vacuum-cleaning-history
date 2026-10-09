@@ -10,16 +10,18 @@ import struct
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 
 from PIL import Image, ImageDraw
 import voluptuous as vol
 from homeassistant.components import frontend, websocket_api
+from homeassistant.auth.permissions.const import POLICY_READ
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.recorder import get_instance, history as recorder_history
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from .credentials import independent_settings
+from .security import Admission, HistoryBusy, WorkPool, download_map, visible_records
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -134,6 +136,8 @@ class History:
         self.lock = asyncio.Lock(); self.limit = asyncio.Semaphore(3)
         self.log_lock = asyncio.Lock(); self.last_log_request = 0
         self.pages = {}; self.records = {}; self.types = {}; self.images = OrderedDict()
+        self.admission = Admission()
+        self.work = WorkPool()
         self.setting_entities = {
             'cleaning_mode': settings.get(CONF_CLEAN_MODE_ENTITY_ID),
             'suction': settings.get(CONF_SUCTION_ENTITY_ID),
@@ -160,7 +164,13 @@ class History:
 
     async def listing(self, page, refresh):
         cached = self.pages.get(page)
-        if cached and not refresh and time.monotonic() - cached[0] < 300: return cached[1]
+        if cached:
+            age = time.monotonic() - cached[0]
+            if age < (30 if refresh else 300):
+                return cached[1]
+        return await self.work.run(('page', page), lambda: self._listing(page))
+
+    async def _listing(self, page):
         async with self.limit:
             result = await self.api('/v1.0/users/sweepers/file/' + self.device + '/list?' + urlencode({'file_type':'pic','page_no':page,'page_size':20}))
         records = [{'id':str(item['id']), 'time':int(item['time'])} for item in result.get('datas',[])]
@@ -177,11 +187,16 @@ class History:
         await self.add_recorded_settings(records)
         value = {'records':records,'total':result.get('total_count',len(records)), 'has_more':bool(result.get('has_more')), 'page':page, 'updated':int(time.time())}
         self.pages[page] = (time.monotonic(),value)
+        while len(self.pages) > 32:
+            self.pages.pop(next(iter(self.pages)))
+        while len(self.records) > 640:
+            self.records.pop(next(iter(self.records)))
         return value
 
     async def cleaning_type(self, record):
         cached = self.types.get(record['id'])
-        if cached: return cached
+        if cached and (cached[1] is not None or time.monotonic() - cached[0] < 300):
+            return cached[1]
         minutes = record.get('minutes')
         if minutes is None: return None
         start = (record['time'] - (minutes + 10) * 60) * 1000
@@ -196,15 +211,19 @@ class History:
         }
         try:
             async with self.log_lock:
+                cached = self.types.get(record['id'])
+                if cached and (cached[1] is not None or time.monotonic() - cached[0] < 300):
+                    return cached[1]
                 delay = .28 - (time.monotonic() - self.last_log_request)
                 if delay > 0: await asyncio.sleep(delay)
-                result = await self.api(path)
                 self.last_log_request = time.monotonic()
-            for item in result.get('logs', []):
-                label = labels.get(str(item.get('value')))
-                if label:
-                    self.types[record['id']] = label
-                    return label
+                result = await self.api(path)
+                label = next((labels[str(item.get('value'))] for item in result.get('logs', [])
+                              if str(item.get('value')) in labels), None)
+                self.types[record['id']] = (time.monotonic(), label)
+                while len(self.types) > 640:
+                    self.types.pop(next(iter(self.types)))
+                return label
         except Exception:
             return None
         return None
@@ -238,19 +257,13 @@ class History:
         if not record: raise ValueError('Load history first')
         if file_id in self.images:
             self.images.move_to_end(file_id); return self.images[file_id]
+        return await self.work.run(('map', file_id), lambda: self._image(file_id, record))
+
+    async def _image(self, file_id, record):
         async with self.limit:
             result = await self.api('/v1.0/users/sweepers/file/' + self.device + '/download?' + urlencode({'id':file_id}))
-            url = result.get('app_map','')
-            if urlparse(url).scheme != 'https': raise ValueError('Invalid map URL')
-            async with asyncio.timeout(25):
-                async with async_get_clientsession(self.hass).get(url) as response:
-                    response.raise_for_status()
-                    chunks = []; total = 0
-                    async for chunk in response.content.iter_chunked(65536):
-                        total += len(chunk)
-                        if total > 8_000_000: raise ValueError('Map too large')
-                        chunks.append(chunk)
-            image = await self.hass.async_add_executor_job(decode_map,b''.join(chunks),record.get('section_sizes',()))
+            data = await download_map(result.get('app_map', ''))
+            image = await self.hass.async_add_executor_job(decode_map,data,record.get('section_sizes',()))
             self.images[file_id] = image
             while len(self.images) > 32: self.images.popitem(last=False)
             return image
@@ -301,16 +314,25 @@ async def async_setup_entry(hass, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass, entry: ConfigEntry) -> bool:
     """Unload the configured history source."""
-    hass.data[DOMAIN].pop("history", None)
+    if history := hass.data[DOMAIN].pop("history", None):
+        await history.work.close()
     return True
 
 
 @websocket_api.websocket_command({vol.Required('type'):'tuvio_history/list',vol.Optional('page',default=1):vol.All(int,vol.Range(min=1,max=1000)),vol.Optional('refresh',default=False):bool})
 @websocket_api.async_response
 async def ws_list(hass,connection,msg):
+    if connection.user is None:
+        connection.send_error(msg['id'], 'unauthorized', 'Authentication required')
+        return
     try:
-        result = await hass.data[DOMAIN]["history"].listing(msg['page'],msg['refresh'])
-        connection.send_result(msg['id'],result)
+        history = hass.data[DOMAIN]["history"]
+        with history.admission.request(connection.user.id):
+            result = await history.listing(msg['page'],msg['refresh'])
+            connection.send_result(msg['id'], visible_records(
+                result, history.setting_entities, connection.user, POLICY_READ))
+    except HistoryBusy:
+        connection.send_error(msg['id'], 'history_busy', 'Слишком много запросов. Попробуйте позже.')
     except Exception:
         connection.send_error(msg['id'],'history_unavailable','Не удалось загрузить историю из Tuya. Попробуйте обновить позже.')
 
@@ -318,8 +340,15 @@ async def ws_list(hass,connection,msg):
 @websocket_api.websocket_command({vol.Required('type'):'tuvio_history/map',vol.Required('file_id'):str})
 @websocket_api.async_response
 async def ws_map(hass,connection,msg):
+    if connection.user is None:
+        connection.send_error(msg['id'], 'unauthorized', 'Authentication required')
+        return
     try:
-        image = await hass.data[DOMAIN]["history"].image(msg['file_id'])
-        connection.send_result(msg['id'],{'image':image})
+        history = hass.data[DOMAIN]["history"]
+        with history.admission.request(connection.user.id):
+            image = await history.image(msg['file_id'])
+            connection.send_result(msg['id'],{'image':image})
+    except HistoryBusy:
+        connection.send_error(msg['id'], 'history_busy', 'Слишком много запросов. Попробуйте позже.')
     except Exception:
         connection.send_error(msg['id'],'map_unavailable','Карта этой уборки недоступна или имеет неподдерживаемый формат.')

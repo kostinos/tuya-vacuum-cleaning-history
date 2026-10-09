@@ -83,6 +83,28 @@ reconstructed. Home Assistant Recorder retention determines how far back
 mode, suction, and water settings are available. Older maps still remain
 usable, but missing historical metadata is left blank.
 
+## Access and request limits
+
+Authenticated Home Assistant users can view the cleaning archive and maps.
+Recorder-derived mode, suction, and water fields are shown only when that user
+has read permission for the configured source entity. Permission filtering also
+applies to cached responses.
+
+Identical in-flight page/map requests share one load. Forced refresh reuses a
+page fetched less than 30 seconds ago; ordinary reads reuse it for five minutes.
+The backend admits at most two pending commands per user and eight overall,
+with rolling limits of 20 commands per user and 60 overall per minute. At most
+four different loads can run, including work whose callers have disconnected.
+Excess requests return a retry-later error. Unloading cancels remaining loads.
+
+Map downloads use a separate credential-free client, HTTPS on port 443, and
+public IP addresses only. DNS results are checked by the connection resolver;
+private/local addresses, automatic redirects, cookies, and environment proxies
+are not allowed. The existing 25-second download timeout and 8 MB size limit
+remain. Tuya does not document a complete storage-host allowlist; public storage
+domains are accepted subject to these checks. Storage links requiring redirects
+or private DNS destinations are intentionally rejected.
+
 ## Support
 
 When reporting a problem, include the vacuum model, Home Assistant version,
